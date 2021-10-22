@@ -102,11 +102,11 @@ class Trade:
         
 
 class Broker:
-    def __init__(self, *, data, cash):
+    def __init__(self, *, data, cash,exclusive_orders=True):
         self.orders = []
         self.trades = []
         self.closed_trades = []
-        self._exclusive_orders = None
+        self._exclusive_orders = exclusive_orders
         self._data = data
         self._cash = cash
         self.position = Position(self)
@@ -119,19 +119,23 @@ class Broker:
 
     def new_order(self, size, order_type):
         print("placing new order of size", size, "and type", order_type)
+        print(len(self.orders),"before placing a order")
         ## Args should be changend in the fuure for more functionality
         order = Order(self, size,  order_type)
         if self._exclusive_orders:
             for order in self.orders:
+                print("cancelling order")
                 order.cancel()
             for trade in self.trades:
                 trade.close() 
         
         self.orders.append(order)
+        print(len(self.orders),"after adding new order")
         return order
 
     def process_orders(self):
-        ##print(len(self.orders),len(self.trades))
+        if (len(self.orders) > 0):
+            print(self.orders,"hello ")
         data = self._data
         try:
             _open, high, low = data.Open[-1], data.High[-1], data.Low[-1]
@@ -139,14 +143,16 @@ class Broker:
         except IndexError:
             return
 
-        for order in list(self.orders):
+        for order in self.orders:
             ##needs to be a integer dont know how ?!
             size = order._size
+            print("request new trade")
             self.open_trade(size, _open, order._order_type)
             self.orders.remove(order)
 
 
     def open_trade(self, size, price, trade_type):
+        print("opening trade")
         trade = Trade(self, size, price, trade_type)
         self.trades.append(trade)
         return trade
@@ -164,7 +170,7 @@ class Backtest:
     def __init__(self, data, strategy, commission=0.022, exclusive_orders=True ,cash=100000):
         #print("Input strategy",strategy)
         self.data = data
-        self.broker = Broker(data=data, cash=cash)
+        self.broker = Broker(data=data, cash=cash ,exclusive_orders=exclusive_orders)
         self.strategy = strategy(data=data,cash=cash)
         self.commission = commission
         self.exclusive_orders = exclusive_orders
@@ -211,6 +217,7 @@ class Backtest:
             
             self.broker.next()
             self.strategy.next()
+            print(self.broker.orders)
             
             """ trades = self.strategy.get_order()
             if len(trades) == 0:
