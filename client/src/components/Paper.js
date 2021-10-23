@@ -16,6 +16,7 @@ const StyledPaper = styled(Paper)`
   align-items: center;
   justify-content: center;
   align-self: center;
+  margin: 1em;
 `;
 
 export default StyledPaper;

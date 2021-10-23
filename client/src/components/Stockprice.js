@@ -8,7 +8,7 @@ const pad = { left: 30, right: 5, top: 5, bottom: 20 };
 
 const url_ohlc = "/api/data/OHLC";
 
-function Output(props) {
+function Stockprice(props) {
   useEffect(() => onMount(), []);
 
   function getData(stock) {
@@ -69,8 +69,6 @@ function Output(props) {
       .call(d3.axisLeft(yScale));
     // Add the line
     var line = svg.append("g").attr("clip-path", "url(#clip)");
-
-    console.log(data);
 
     var series = line.append("g").classed("series", true);
     series
@@ -174,6 +172,8 @@ function Output(props) {
     //get Data from APi
     var data = getData("AAPL");
 
+    //d3.select("#data_svg_root").style("grid-row", "2");
+
     var svg = d3
       .select("#data_svg_root")
       .append("svg")
@@ -202,4 +202,4 @@ function Output(props) {
   return <div id="data_svg_root"></div>;
 }
 
-export default Output;
+export default Stockprice;

@@ -2,13 +2,14 @@ import React from "react";
 import styled from "styled-components";
 
 import Paper from "./Paper";
-import Output from "./Output";
+import Stockprice from "./Stockprice";
+import Trades from "./Trades";
 import Navbar from "./Navbar";
 
 const StyledLandingPage = styled(LandingPage)`
   display: grid;
-  grid-template-columns: 1fr 4fr 4fr 1fr;
-  grid-template-rows: 5vh 95vh;
+  grid-template-columns: 1fr 4fr 0.2fr 4fr 1fr;
+  grid-template-rows: 10vh auto;
   h1 {
     background-color: ${(props) => props.theme.secondary};
     box-shadow: ${(props) => props.theme.outerShadow};
@@ -27,13 +28,25 @@ const StyledLandingPage = styled(LandingPage)`
     filter: ${(props) => props.theme.dropShadow};
   }
   .output-paper {
+    display: flex;
+    align-items: stretch;
     flex-direction: column;
-    grid-row: 2;
-    grid-column: 2 / 4;
+    justify-content: stretch;
   }
   .nav {
-    grid-row: 1;
-    grid-column: 1 / 5;
+    grid-column: 1 / 6;
+  }
+  .output-header {
+    text-align: center;
+  }
+  .otp1 {
+    grid-column: 2 / 3;
+  }
+  .otp2 {
+    grid-column: 4 / 5;
+  }
+  .inf1 {
+    grid-column: 2 / 5;
   }
 `;
 function LandingPage(props) {
@@ -41,9 +54,25 @@ function LandingPage(props) {
     <div className={props.className}>
       <Navbar className="nav" />
       <div className="corner" />
-      <Paper className="output-paper">
-        <h2>Output #1</h2>
-        <Output />
+      <Paper className="output-paper otp1">
+        <h2 className="output-header">Output #1</h2>
+        <Stockprice />
+      </Paper>
+      <Paper className="output-paper otp2">
+        <h2 className="output-header">Output #2</h2>
+        <Trades />
+      </Paper>
+      <Paper className="output-paper inf1">
+        <h2 className="output-header">Infobox</h2>
+        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
+        eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
+        voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
+        clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit
+        amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
+        nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat,
+        sed diam voluptua. At vero eos et accusam et justo duo dolores et ea
+        rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
+        ipsum dolor sit amet.
       </Paper>
     </div>
   );

@@ -7,19 +7,12 @@
         "id": "5e4e7db651e1de97",
         "type": "leaf",
         "state": {
-          "type": "graph",
-          "state": {}
-        },
-        "group": "1a6b4add28f54bed"
-      },
-      {
-        "id": "9eb5ce0a88dad61e",
-        "type": "leaf",
-        "state": {
-          "type": "empty",
-          "state": {}
-        },
-        "group": "1a6b4add28f54bed"
+          "type": "markdown",
+          "state": {
+            "file": "3 Resources/Open and Close of the Candle.md",
+            "mode": "preview"
+          }
+        }
       }
     ],
     "direction": "vertical"
@@ -75,6 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "3 Resources/Open and Close of the Candle.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -94,6 +88,7 @@
   },
   "active": "5e4e7db651e1de97",
   "lastOpenFiles": [
+    "3 Resources/Open and Close of the Candle.md",
     "2 Areas/Backtesting/Backtest.md",
     "2 Areas/Backtesting/Strategy.md",
     "2 Areas/Backtesting/Broker.md",
@@ -102,7 +97,6 @@
     "3 Resources/Definitions.md",
     "2 Areas/Backtesting/Untitled.md",
     "Untitled.md",
-    "2 Areas/Backtesting/ToDo.md",
-    "3 Resources/Options.md"
+    "2 Areas/Backtesting/ToDo.md"
   ]
 }
