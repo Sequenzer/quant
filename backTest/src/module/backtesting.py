@@ -10,7 +10,6 @@ from ..indicators import moving_average
 class Strategy(metaclass=ABCMeta):
     def __init__(self,broker, data=None, cash=None):
         self.data = data
-        self.cash = cash
         self.indicators = []
         self._broker = broker
         self.order = None
@@ -38,15 +37,13 @@ class Strategy(metaclass=ABCMeta):
         self._broker.process_orders()
         return self._broker.trades
 
-    def buy(self,
-            size: float = 1):
+    def buy(self,size_pct=1):
+        size_abs = self._broker._max_size * size_pct
+        return self._broker.new_order(size_abs, "buy")
 
-        return self._broker.new_order(size, "buy")
-
-    def sell(self,
-             size: float = 1):
-
-        return self._broker.new_order(size, "sell")
+    def sell(self,size_pct= 1):
+        size_abs = self._broker._max_size * size_pct
+        return self._broker.new_order(size_abs, "sell")
 
     @property
     def position(self):
@@ -71,37 +68,37 @@ class Position:
 
 
 class Order:
-    def __init__(self , broker, size, order_type):
+    def __init__(self , broker, size_abs, order_type):
         self.__broker = broker
-        self._size = size
+        self._size_abs = size_abs
         self._order_type = order_type
     def cancel(self):
         self.__broker.orders.remove(self)
 
 class Trade:
-    def __init__(self, broker, size, entry_price, trade_type):
+    def __init__(self, broker, size_abs, entry_price, trade_type):
         self.__broker = broker
-        self._size = size
+        self._size_abs = size_abs
         self._entry_price = entry_price
         self._trade_type = trade_type
     
     def close(self):
         self.__broker.close_trade(self)
         if self._trade_type == 'buy':
-            order = self.__broker.new_order(self._size,"sell")
+            order = self.__broker.new_order(self._size_abs,"sell")
         if self._trade_type == 'sell':
-            order = self.__broker.new_order(self._size,"buy")
+            order = self.__broker.new_order(self._size_abs,"buy")
         #Warning!!!! order can be None
         self.__broker.orders.insert(0, order)
     
     @property
     def value(self):
-        return abs(self._size)*self._entry_price
+        return abs(self._size_abs)*self._entry_price
     
     @property
     def ret(self):
-        ##Return of the trade
-        return abs(self._size)*(self.__broker._last_price-self._entry_price)
+        ##Absolute return of the trade
+        return abs(self._size_abs)*(self.__broker._last_price-self._entry_price)
     
     
         
@@ -122,9 +119,9 @@ class Broker:
         i = len(self._data) - 1
         self.process_orders()    
 
-    def new_order(self, size, order_type):
-        ## Args should be changend in the fuure for more functionality
-        order = Order(self, size,  order_type)
+    def new_order(self, size_abs, order_type):
+        ## Args should be changend in the future for more functionality
+        order = Order(self, size_abs,  order_type)
         if self._exclusive_orders:
             for order in self.orders:
                 order.cancel()
@@ -144,25 +141,36 @@ class Broker:
 
         for order in self.orders:
             ##needs to be a integer dont know how ?!
-            size = order._size
-            ##print("request new trade")
-            self.open_trade(size, _open, order._order_type)
-            self.orders.remove(order)
+            size = order._size_abs
+            if (order._order_type == "buy" and size*_open < self._cash) or (order._order_type == "sell"):
+                ##print("request new trade")
+                self.open_trade(size, _open, order._order_type)
+                self.orders.remove(order)
+            else :
+                ##print("Can't place Order")
+                self.orders.remove(order)            
 
 
-    def open_trade(self, size, price, trade_type):
-        trade = Trade(self, size, price, trade_type)
+    def open_trade(self, size_abs, current_price, trade_type):
+        trade = Trade(self, size_abs, current_price, trade_type)
         self.trades.append(trade)
         return trade
     def close_trade(self, trade):
         self.trades.remove(trade)
         self.closed_trades.append(trade)
-        self._cash += trade.ret
+        if(trade._trade_type == "buy"):
+            self._cash += trade.ret
+        if(trade._trade_type == "sell"):
+            self._cash -= trade.ret
+        
     
     
     @property
     def _last_price(self):
         return self._data.Close[-1]
+    @property
+    def _max_size(self):
+        return np.floor(self._cash / self._last_price)
 
 
 
@@ -228,6 +236,7 @@ class Backtest:
             # print(self.strategy.data)
              """
         print (len(self.broker.closed_trades),len(self.broker.orders),len(self.broker.trades))
+        print(self.broker._cash)
         self.data.to_csv('test.csv')
 
     def plot(self):
