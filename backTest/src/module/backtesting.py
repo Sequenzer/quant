@@ -8,11 +8,11 @@ from ..indicators import moving_average
 
 
 class Strategy(metaclass=ABCMeta):
-    def __init__(self, data=None, cash=None):
+    def __init__(self,broker, data=None, cash=None):
         self.data = data
         self.cash = cash
         self.indicators = []
-        self._broker = Broker(data=self.data,cash = self.cash)
+        self._broker = broker
         self.order = None
 
         # self.init()
@@ -40,7 +40,6 @@ class Strategy(metaclass=ABCMeta):
 
     def buy(self,
             size: float = 1):
-        print("buying")
 
         return self._broker.new_order(size, "buy")
 
@@ -67,7 +66,6 @@ class Position:
         self._broker = broker
 
     def close(self):
-        print("closing all positions", len(self._broker.trades))
         for trade in self._broker.trades:
             trade.close()
 
@@ -81,13 +79,14 @@ class Order:
         self.__broker.orders.remove(self)
 
 class Trade:
-    def __init__(self, broker, size, prize, trade_type):
+    def __init__(self, broker, size, entry_price, trade_type):
         self.__broker = broker
         self._size = size
-        self._prize = prize
+        self._entry_price = entry_price
         self._trade_type = trade_type
     
     def close(self):
+        self.__broker.close_trade(self)
         if self._trade_type == 'buy':
             order = self.__broker.new_order(self._size,"sell")
         if self._trade_type == 'sell':
@@ -97,7 +96,13 @@ class Trade:
     
     @property
     def value(self):
-        return abs(self._size)*self._prize
+        return abs(self._size)*self._entry_price
+    
+    @property
+    def ret(self):
+        ##Return of the trade
+        return abs(self._size)*(self.__broker._last_price-self._entry_price)
+    
     
         
 
@@ -118,24 +123,18 @@ class Broker:
         self.process_orders()    
 
     def new_order(self, size, order_type):
-        print("placing new order of size", size, "and type", order_type)
-        print(len(self.orders),"before placing a order")
         ## Args should be changend in the fuure for more functionality
         order = Order(self, size,  order_type)
         if self._exclusive_orders:
             for order in self.orders:
-                print("cancelling order")
                 order.cancel()
             for trade in self.trades:
                 trade.close() 
         
         self.orders.append(order)
-        print(len(self.orders),"after adding new order")
         return order
 
     def process_orders(self):
-        if (len(self.orders) > 0):
-            print(self.orders,"hello ")
         data = self._data
         try:
             _open, high, low = data.Open[-1], data.High[-1], data.Low[-1]
@@ -146,22 +145,24 @@ class Broker:
         for order in self.orders:
             ##needs to be a integer dont know how ?!
             size = order._size
-            print("request new trade")
+            ##print("request new trade")
             self.open_trade(size, _open, order._order_type)
             self.orders.remove(order)
 
 
     def open_trade(self, size, price, trade_type):
-        print("opening trade")
         trade = Trade(self, size, price, trade_type)
         self.trades.append(trade)
         return trade
-    def close_trade(self, trade ,price):
-        print("closing trade")
+    def close_trade(self, trade):
         self.trades.remove(trade)
         self.closed_trades.append(trade)
-        self._cash += trade.value
-
+        self._cash += trade.ret
+    
+    
+    @property
+    def _last_price(self):
+        return self._data.Close[-1]
 
 
 
@@ -171,7 +172,7 @@ class Backtest:
         #print("Input strategy",strategy)
         self.data = data
         self.broker = Broker(data=data, cash=cash ,exclusive_orders=exclusive_orders)
-        self.strategy = strategy(data=data,cash=cash)
+        self.strategy = strategy( broker = self.broker,data=data,cash=cash)
         self.commission = commission
         self.exclusive_orders = exclusive_orders
 
@@ -217,7 +218,6 @@ class Backtest:
             
             self.broker.next()
             self.strategy.next()
-            print(self.broker.orders)
             
             """ trades = self.strategy.get_order()
             if len(trades) == 0:
@@ -227,7 +227,7 @@ class Backtest:
             self.data_extend_order(out, i)
             # print(self.strategy.data)
              """
-        print (self.broker.closed_trades,self.broker.orders,self.broker.trades)
+        print (len(self.broker.closed_trades),len(self.broker.orders),len(self.broker.trades))
         self.data.to_csv('test.csv')
 
     def plot(self):
@@ -264,11 +264,11 @@ class AligatorIndicator(Strategy):
         indicator = aligator_indicator(self.green, self.red, self.blue)
         if indicator != None:
             if indicator:
-                print("requesting a buy order")
+                ##print("requesting a buy order")
                 self.position.close()
                 self.buy()
             else:
-                print("requesting a sell order")
+                ##print("requesting a sell order")
                 self.position.close()
                 self.sell()
 
