@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "2 Areas/Backtesting/Output.md",
+            "file": "3 Resources/Open and Close of the Candle.md",
             "mode": "preview"
           }
         }
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "2 Areas/Backtesting/Output.md",
+                "file": "3 Resources/Open and Close of the Candle.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -88,15 +88,15 @@
   },
   "active": "5e4e7db651e1de97",
   "lastOpenFiles": [
-    "2 Areas/Backtesting/Output.md",
-    "3 Resources/Options.md",
-    "3 Resources/Untitled.md",
     "3 Resources/Open and Close of the Candle.md",
-    "3 Resources/Quant.md",
+    "2 Areas/Backtesting/Backtest.md",
+    "2 Areas/Backtesting/Strategy.md",
+    "2 Areas/Backtesting/Broker.md",
+    "2 Areas/Backtesting/Minor Classes.md",
+    "2 Areas/Backtesting/Output.md",
     "3 Resources/Definitions.md",
-    "3 Resources/Backtrader.md",
-    "3 Resources/Backtesting.py.md",
-    "2 Areas/Backtesting/ToDo.md",
-    "2 Areas/Backtesting/Untitled.md"
+    "2 Areas/Backtesting/Untitled.md",
+    "Untitled.md",
+    "2 Areas/Backtesting/ToDo.md"
   ]
 }
