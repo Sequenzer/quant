@@ -37,13 +37,11 @@ class Strategy(metaclass=ABCMeta):
         self._broker.process_orders()
         return self._broker.trades
 
-    def buy(self,size_pct=1):
-        size_abs = self._broker._max_size * size_pct
-        return self._broker.new_order(size_abs, "buy")
+    def buy(self):
+        return self._broker.new_order(self._broker._cash, "buy")
 
-    def sell(self,size_pct= 1):
-        size_abs = self._broker._max_size * size_pct
-        return self._broker.new_order(size_abs, "sell")
+    def sell(self):
+        return self._broker.new_order(self._broker._cash, "sell")
 
     @property
     def position(self):
@@ -68,37 +66,43 @@ class Position:
 
 
 class Order:
-    def __init__(self , broker, size_abs, order_type):
-        self.__broker = broker
-        self._size_abs = size_abs
-        self._order_type = order_type
+    def __init__(self , broker, cash_value, _type):
+        self._broker = broker
+        self._cash_value = cash_value
+        self._type = _type
     def cancel(self):
-        self.__broker.orders.remove(self)
+        self._broker.orders.remove(self)
 
 class Trade:
-    def __init__(self, broker, size_abs, entry_price, trade_type):
-        self.__broker = broker
+    def __init__(self, broker, size_abs, entry_price, trade_type, _opening_date=None):
+        self._broker = broker
         self._size_abs = size_abs
         self._entry_price = entry_price
         self._trade_type = trade_type
+        self._curr_cash = None
+        self._opening_date = _opening_date
+        self._closing_date = None
     
     def close(self):
-        self.__broker.close_trade(self)
+        self._broker.close_trade(self)
         if self._trade_type == 'buy':
-            order = self.__broker.new_order(self._size_abs,"sell")
+            order = self._broker.new_order(self._size_abs * self._broker._data.iloc[-1]['Open'],"sell")
         if self._trade_type == 'sell':
-            order = self.__broker.new_order(self._size_abs,"buy")
+            order = self._broker.new_order(self._size_abs * self._broker._data.iloc[-1]['Open'],"buy")
         #Warning!!!! order can be None
-        self.__broker.orders.insert(0, order)
+        self._broker.orders.insert(0, order)
     
-    @property
-    def value(self):
-        return abs(self._size_abs)*self._entry_price
+    def current_value(self, current_price):
+        return abs(self._size_abs) * current_price
     
     @property
     def ret(self):
         ##Absolute return of the trade
-        return abs(self._size_abs)*(self.__broker._last_price-self._entry_price)
+        return abs(self._size_abs) * (self._broker._last_price - self._entry_price)
+
+    @property
+    def entry_value(self):
+        return abs(self._size_abs) * self._entry_price
     
     
         
@@ -116,12 +120,12 @@ class Broker:
 
     def next(self):
         ##current time index
-        i = len(self._data) - 1
+        # i = len(self._data) - 1
         self.process_orders()    
 
-    def new_order(self, size_abs, order_type):
+    def new_order(self, cash_value, _type):
         ## Args should be changend in the future for more functionality
-        order = Order(self, size_abs,  order_type)
+        order = Order(self, cash_value,  _type)
         if self._exclusive_orders:
             for order in self.orders:
                 order.cancel()
@@ -141,27 +145,35 @@ class Broker:
 
         for order in self.orders:
             ##needs to be a integer dont know how ?!
-            size = order._size_abs
-            if (order._order_type == "buy" and size*_open < self._cash) or (order._order_type == "sell"):
-                ##print("request new trade")
-                self.open_trade(size, _open, order._order_type)
-                self.orders.remove(order)
-            else :
-                ##print("Can't place Order")
-                self.orders.remove(order)            
+            size = np.floor(order._cash_value / _open)
+            if (order._type == "buy" or (order._type == "sell")) and self._cash > 0 and not size == 0:
+                self.open_trade(size, _open, order._type)
+            
+            self.orders.remove(order)
 
 
-    def open_trade(self, size_abs, current_price, trade_type):
-        trade = Trade(self, size_abs, current_price, trade_type)
+    def open_trade(self, cash_value, current_price, trade_type):
+        trade = Trade(self, cash_value, current_price, trade_type, _opening_date = self._data.iloc[-1].name)
+
+        if(trade._trade_type == "buy"):
+            self._cash -= trade.entry_value
+        if(trade._trade_type == "sell"):
+            self._cash += trade.entry_value
+
         self.trades.append(trade)
         return trade
+
     def close_trade(self, trade):
-        self.trades.remove(trade)
-        self.closed_trades.append(trade)
         if(trade._trade_type == "buy"):
-            self._cash += trade.ret
+            self._cash += trade.current_value(self._data.Open[-1])
         if(trade._trade_type == "sell"):
-            self._cash -= trade.ret
+            self._cash -= trade.current_value(self._data.Open[-1])
+
+        self.trades.remove(trade)
+
+        trade._closing_date = self._data.iloc[-1].name
+        trade._curr_cash = self._cash
+        self.closed_trades.append(trade)
         
     
     
@@ -177,7 +189,6 @@ class Broker:
     
 class Backtest:
     def __init__(self, data, strategy, commission=0.022, exclusive_orders=True ,cash=100000):
-        #print("Input strategy",strategy)
         self.data = data
         self.broker = Broker(data=data, cash=cash ,exclusive_orders=exclusive_orders)
         self.strategy = strategy( broker = self.broker,data=data,cash=cash)
@@ -197,8 +208,19 @@ class Backtest:
         self.data["TradeID"] = None
         self.data["TradePositionList"] = None
 
-    def data_extend_order(self, strat_order, i):
+    def data_extend_order_day(self, strat_order, i):
         self.data["TradeType"].iloc[i] = strat_order
+
+    def trades_to_csv(self):
+        trades = self.broker.closed_trades
+
+        trade_frame = pd.DataFrame(columns=["Opening Date", "Closing Date", "Type", "Volume", "Cash"])
+
+        for trade in trades:
+            trade_array = pd.Series([trade._opening_date, trade._closing_date, trade._trade_type, trade._size_abs, trade._curr_cash], index = trade_frame.columns)
+            trade_frame = trade_frame.append(trade_array, ignore_index=True)
+
+        trade_frame.to_csv('trades.csv')
 
     def run(self):
         #Initialize the strategy first
@@ -209,32 +231,23 @@ class Backtest:
         # Dirty Solutins maybe there is a better way to do this
         indicator_attrs = {attr: indicator for attr, indicator in self.strategy.__dict__.items() if attr != 'data' and attr != "cash" and attr != "_broker" and attr != "indicators" and attr != "order"}
 
-        ##print(indicator_attrs)
-
         #data = self.data.copy(deep=False)
 
         for i in range(1, len(self.data.index)):
             #data = self.data.iloc[:i]
             self.strategy.data = self.data.iloc[:i]
-            self.broker.data = self.data.iloc[:i]
+            self.broker._data = self.data.iloc[:i]
             # Slice Indicators
             for attr in indicator_attrs:
                 indicator=indicator_attrs[attr] 
 
-                ##print(indicator.iloc[:i+1])
                 setattr(self.strategy, attr, indicator.iloc[:i+1])
             
             self.broker.next()
             self.strategy.next()
-            
-            """ trades = self.strategy.get_order()
-            if len(trades) == 0:
-                out = ""
-            else:
-                out = trades[0]._trade_type
-            self.data_extend_order(out, i)
-            # print(self.strategy.data)
-             """
+
+        self.trades_to_csv()
+
         print (len(self.broker.closed_trades),len(self.broker.orders),len(self.broker.trades))
         print(self.broker._cash)
         self.data.to_csv('test.csv')
@@ -273,11 +286,9 @@ class AligatorIndicator(Strategy):
         indicator = aligator_indicator(self.green, self.red, self.blue)
         if indicator != None:
             if indicator:
-                ##print("requesting a buy order")
                 self.position.close()
                 self.buy()
             else:
-                ##print("requesting a sell order")
                 self.position.close()
                 self.sell()
 
