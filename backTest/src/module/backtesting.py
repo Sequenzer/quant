@@ -103,10 +103,10 @@ class Broker:
 
         if(trade._type == "buy"):
             self._cash -= trade.entry_value
-            logging.info(f'{self.value}, {self._cash}, open buy, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, open buy, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
         if(trade._type == "sell"):
             self._cash += trade.entry_value
-            logging.info(f'{self.value}, {self._cash}, open sell, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, open sell, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
         return trade
 
     def close_trade(self, trade):
@@ -114,10 +114,10 @@ class Broker:
 
         if(trade._type == "buy"):
             self._cash += trade.current_value(self._data.Open[-1])
-            logging.info(f'{self.value}, {self._cash}, close buy, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, close buy, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
         if(trade._type == "sell"):
             self._cash -= trade.current_value(self._data.Open[-1])
-            logging.info(f'{self.value}, {self._cash}, close sell, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, close sell, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
 
         trade._closing_date = self._data.iloc[-1].name
         trade._curr_cash = self._cash
@@ -127,7 +127,10 @@ class Broker:
     def value(self):
         out = 0
         for trade in self.trades:
-            out += trade.entry_value + trade.ret
+            if trade._type == 'sell':
+                out -= trade.current_value(self._data.Open[-1])
+            else:
+                out += trade.entry_value + trade.ret
         return out + self._cash
     
     @property
