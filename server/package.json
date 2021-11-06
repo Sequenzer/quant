@@ -1,14 +1,14 @@
 {
-  "name": "react-bp",
+  "name": "quant-backend-server",
   "version": "1.0.0",
   "main": "server.js",
   "license": "MIT",
   "author": "Marcel Wack <wac.marcel@gmail.com>",
   "scripts": {
-    "client-install": "cd client && yarn install ",
+    "client-install": "cd .. && cd client && yarn install ",
     "start": "node server.js",
     "server": "nodemon server.js",
-    "client": "cd client && yarn start",
+    "client": "cd .. && cd client && yarn start",
     "dev": "concurrently \"yarn server\" \"yarn client\""
   },
   "devDependencies": {

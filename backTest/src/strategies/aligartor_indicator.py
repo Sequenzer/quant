@@ -1,6 +1,8 @@
 import pandas as pd
 
-from backtesting import Strategy
+
+# from backtesting import Strategy
+from ..module import Strategy
 from ..indicators import moving_average
 
 def aligator_indicator(green, red, blue):

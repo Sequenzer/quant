@@ -11,5 +11,7 @@ debug.log
 #Server stuff
 .env
 /node_modules
+/server/node_modules
 yarn-error.log
 yarn.lock
+debug.log

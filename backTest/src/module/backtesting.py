@@ -1,143 +1,196 @@
 import numpy as np
 import pandas as pd
 
-from datetime import date
-
-from ..indicators import moving_average
-
-class Strategy:
-    def __init__(self, data=None, cash=None):
-        self.data = data
-        self.cash = cash
-        self.indicators = dict()
-        self.position = Position()
-        self.order = None
-
-        # self.init()
-
-    def I(self, indicator_function, data, *args, **kwargs):
-        indicator_data = indicator_function(data, *args, **kwargs)
-        return indicator_data
-    
-    def init(self):
-        pass
-
-    def next(self):
-        pass
-
-    def get_order(self):
-        self.order = None
-        self.init()
-        self.next()
-        return self.order
-
-    def sell(self):
-        self.order = 'sell'
-
-    def buy(self):
-        self.order = 'buy'
+import logging
+logging.basicConfig(filename='debug.log', format='', level=logging.FATAL, filemode='w')
 
 class Position:
-    """
-    Only buy and close state for the moment.
-    """
-    def __init__(self, position_type='cash', position_value=0):
-        self.type = position_type # long,short, cash
-        self.value = 0
-    def close(self):
-        if self.type == 'buy':
-            self.type = 'sell'
-        if self.type == 'sell':
-            self.type = 'buy'
+    def __init__(self, broker):
+        self._broker = broker
 
+    def close(self):
+        for trade in self._broker.trades:
+            trade.close()
+
+
+class Order:
+    def __init__(self , broker, cash_value, _type):
+        self._broker = broker
+        self._cash_value = cash_value
+        self._type = _type
+
+    def cancel(self):
+        self._broker.orders.remove(self)
+
+
+class Trade:
+    def __init__(self, broker, size, entry_price, _type, _opening_date=None):
+        self._broker = broker
+        self._size = size
+        self._entry_price = entry_price
+        self._type = _type
+        self._curr_cash = None
+        self._opening_date = _opening_date
+        self._closing_date = None
+
+    def close(self):
+        self._broker.close_trade(self)
+    
+    def current_value(self, current_price):
+        return self._size * current_price
+    
+    @property
+    def ret(self):
+        ##Absolute return of the trade
+        if self._type == 'buy':
+            ret_per_share = self._broker._last_price - self._entry_price
+        else:
+            ret_per_share = self._entry_price - self._broker._last_price
+        return self._size * ret_per_share
+
+    @property
+    def entry_value(self):
+        return self._size * self._entry_price
+        
+
+class Broker:
+    def __init__(self, *, data, cash,exclusive_orders=False):
+        self.orders = []
+        self.trades = []
+        self.closed_trades = []
+        self._exclusive_orders = exclusive_orders
+        self._data = data
+        self._cash = cash
+        self.position = Position(self)
+
+    # def next(self):
+    #     self.process_orders()    
+
+    def new_order(self, cash_value, _type):
+        order = Order(self, cash_value,  _type)
+
+        if self._exclusive_orders:
+            for order in self.orders:
+                order.cancel()
+            for trade in self.trades:
+                trade.close() 
+        
+        self.orders.append(order)
+
+    def process_orders(self):
+        try:
+            _open = self._data.Open[-1]
+        except IndexError:
+            self.orders = []
+            return
+
+        for order in self.orders:
+            if self._cash <= 0:
+                break
+            
+            # Get the number of shares to buy
+            size = int(np.floor(order._cash_value / _open))
+
+            if not size == 0:
+                self.open_trade(size, _open, order._type)
+            
+            self.orders.remove(order)
+
+    def open_trade(self, size, current_price, trade_type):
+
+        trade = Trade(self, size, current_price, trade_type, _opening_date = self._data.iloc[-1].name)
+        self.trades.append(trade)
+
+        if(trade._type == "buy"):
+            self._cash -= trade.entry_value
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, open buy, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
+        if(trade._type == "sell"):
+            self._cash += trade.entry_value
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, open sell, {trade._size}, {trade.entry_value}, {self._data.Open[-1]}')
+        return trade
+
+    def close_trade(self, trade):
+        self.trades.remove(trade)
+
+        if(trade._type == "buy"):
+            self._cash += trade.current_value(self._data.Open[-1])
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, close buy, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
+        if(trade._type == "sell"):
+            self._cash -= trade.current_value(self._data.Open[-1])
+            logging.info(f'{self._data.iloc[-1].name}, {self.value}, {self._cash}, close sell, {trade._size}, {trade.current_value(self._data.Open[-1])}, {self._data.Open[-1]}')
+
+        trade._closing_date = self._data.iloc[-1].name
+        trade._curr_cash = self._cash
+        self.closed_trades.append(trade)
+        
+    @property
+    def value(self):
+        out = 0
+        for trade in self.trades:
+            if trade._type == 'sell':
+                out -= trade.current_value(self._data.Open[-1])
+            else:
+                out += trade.entry_value + trade.ret
+        return out + self._cash
+    
+    @property
+    def _last_price(self):
+        return self._data.Close[-1]
+    @property
+    def _max_size(self):
+        return np.floor(self._cash / self._last_price)
+
+
+
+    
 class Backtest:
-    def __init__(self, data, strategy, commission=0.022, exclusive_orders=True):
+    def __init__(self, data, strategy, commission=0.022, exclusive_orders=True ,cash=100000):
         self.data = data
-        self.strategy = strategy()
+        self.broker = Broker(data=data, cash=cash, exclusive_orders=exclusive_orders)
+        self.strategy = strategy(broker=self.broker, data=data, cash=cash)
         self.commission = commission
         self.exclusive_orders = exclusive_orders
 
-        self.creat_output_data_layout()
-
-    def creat_output_data_layout(self):
-        self.data["Cash"] = None
-        self.data["TradeType"] = None
-        self.data["TradeVolume"] = None
-        self.data["TradeValue"] = None
-        self.data["TradeStock"] = None
-        self.data["TradeID"] = None
-        self.data["TradePositionList"] = None
-
-    def data_extend_order(self, strat_order, i):
+    def data_extend_order_day(self, strat_order, i):
         self.data["TradeType"].iloc[i] = strat_order
 
-    def run(self):
-        for i in range(1, len(self.data.index)):
-            self.strategy.data = self.data.iloc[:i]
-            self.data_extend_order(self.strategy.get_order(), i)
-            # print(self.strategy.data)
+    def trades_to_csv(self):
+        trades = self.broker.closed_trades
 
-        self.data.to_csv('test.csv')
+        trade_frame = pd.DataFrame(columns=["Opening Date", "Closing Date", "Type", "Volume", "Cash"])
+
+        for trade in trades:
+            trade_array = pd.Series([trade._opening_date, trade._closing_date, trade._type, trade._size, trade._curr_cash], index = trade_frame.columns)
+            trade_frame = trade_frame.append(trade_array, ignore_index=True)
+
+        trade_frame.to_csv('trades.csv')
+
+    @property
+    def process_day(self):
+        self.broker.process_orders()
+
+        self.strategy.init()
+        self.strategy.next()
+
+    def run(self):
+        print('Running Backtest.')
+        try:
+            for i in range(1, len(self.data.index)):
+                data = self.data.iloc[:i]
+                self.strategy.data = data
+                self.broker._data = data
+
+                self.process_day
+        
+            print('Saving Data.')
+            self.trades_to_csv()
+        
+        except Exception as e:
+            print('Error Detected.')
+            raise e
+
+        finally:
+            print('Backtest Complete.')
 
     def plot(self):
         pass
-
-def aligator_indicator(green, red, blue):
-    try:
-        is_red_blue_crossover = red[-2] < blue[-2] and red[-1] > blue[-1]
-        is_blue_red_crossover =  red[-2] > blue[-2] and red[-1] < blue[-1]
-
-        green_over_blue = green[-1] > blue[-1]
-        blue_over_green = green[-1] < blue[-1]
-
-        green_over_red = green[-1] > red[-1]
-        red_over_green = green[-1] < red[-1]
-
-        if is_red_blue_crossover and green_over_blue and green_over_red:
-            return True
-        if is_blue_red_crossover and blue_over_green and red_over_green:
-            return False
-        return None
-    except IndexError:
-        return None
-
-class AligatorIndicator(Strategy):
-    def init(self):
-        price = self.data.Close
-        self.green = self.I(moving_average, price, 5, 3)
-        self.red = self.I(moving_average, price, 8, 5)
-        self.blue = self.I(moving_average, price, 13, 8)
-
-    def next(self):
-        indicator = aligator_indicator(self.green, self.red, self.blue)
-        if indicator != None:
-            if indicator:
-                self.position.close()
-                self.buy()
-            else:
-                self.position.close()
-                self.sell()
-
-#Collect Data from CSV base on its Stock name
-def datafromcsv(Stock, start_date=np.datetime64(date(2000, 1, 1)), end_date=np.datetime64(date(2020, 1, 1))):
-    data = pd.read_csv("ressources/testData/"+ Stock + ".csv")
-    columns = ['Date', 'Volume', 'Open', 'High', 'Low', 'Close', 'adjclose']
-    data.columns = columns
-    data = data.set_index("Date")
-    data.index= pd.to_datetime(data.index)
-    data = data.sort_index()
-    data = data.iloc[ lambda x: x.index > start_date] 
-    data = data.iloc[ lambda x: x.index < end_date]
-    return data
-
-def run(strategy=AligatorIndicator, strategy_str="AligatorIndicator"):
-    bt = Backtest(datafromcsv("AAPL"), strategy, commission=.002,
-                exclusive_orders=True)
-    stats = bt.run()
-
-    # if not os.path.exists(html_dir):
-    #     os.mkdir(html_dir)
-
-    # bt.plot(filename='./' + html_dir + '/' + strategy_str)
-
-# def run():
