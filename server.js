@@ -1,26 +1,34 @@
 const express = require("express");
 const { spawn } = require("child_process");
+const mongoose = require("mongoose");
+const { csvToDb } = require("./utils/util");
+
+//csvToDb("AAPL");
+
+//Import .env variables
+require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 const app = express();
 
-app.get("/", (req, res) => {
-  var dataToSend = "";
-  const python = spawn("backTest/venv/Scripts/python", ["backTest/main.py"]);
-  python.stdout.on("data", (data) => {
-    console.log("Fetching data from Python");
-    //console.log(data.toString());
-    dataToSend = data.toString();
-  });
-  python.stderr.on("data", (error) => {
-    console.log(error.toString());
-  });
-  python.on("close", (code) => {
-    // console.log(`${code}`); if you want the closing code
-    // respond to Browser
-    res.send(dataToSend);
-    console.log("closed");
-  });
-});
+//import routes
+const data = require("./routes/api/data");
+const bt = require("./routes/api/backtesting");
+
+// Body parser middleware
+
+app.use(express.json());
+//DB Config
+const db = process.env.MONGO_URI;
+
+//Connect to MongoDB
+mongoose
+  .connect(db, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB Connected..."))
+  .catch((err) => console.log(err));
+
+//Use Routes
+app.use("/api/data", data);
+app.use("/api/bt", bt);
 
 app.listen(port, () => console.log(`Server started on Port ${port}`));
