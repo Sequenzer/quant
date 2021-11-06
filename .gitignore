@@ -6,6 +6,8 @@ __pycache__/*
 .vscode
 html
 test.csv
+trades.csv
+debug.log
 #Server stuff
 .env
 /node_modules
