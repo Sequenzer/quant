@@ -8,7 +8,9 @@ const router = express.Router();
 
 router.get("/", (req, res) => {
   var dataToSend = "";
-  const python = spawn("backTest/venv/Scripts/python", ["backTest/main.py"]);
+  const python = spawn("../backTest/venv/Scripts/python", [
+    "../backTest/main.py",
+  ]);
   python.stdout.on("data", (data) => {
     console.log("Fetching data from Python");
     console.log(data.toString());

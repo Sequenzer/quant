@@ -1,1 +1,0 @@
-Starting Point: https://www.netpicks.com/most-useful-day-trading-indicators/

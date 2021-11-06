@@ -1,1 +1,0 @@
-Possible Paper-Trader: IBKR
