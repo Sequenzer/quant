@@ -27,11 +27,17 @@ class Strategy(metaclass=ABCMeta):
         self._broker.process_orders()
         return self._broker.trades
 
-    def buy(self):
-        return self._broker.new_order(self._broker._cash, "buy")
+    def buy(self, id=None, cash=None, size=None):
+        return self._broker.new_order("buy", 'AAPL', cash, size, True)
 
-    def sell(self):
-        return self._broker.new_order(self._broker._cash, "sell")
+    def sell(self, id=None, cash=None, size=None):
+        return self._broker.new_order("short", 'AAPL', cash, size, True)
+
+    # def short(self, id=None, cash=None, size=None):
+    #     return self._broker.new_order(self._broker.cash, "short")
+
+    # def remove_short(self, id=None, cash=None, size=None):
+    #     return self._broker.new_order(self._broker.cash, "removeShort")
 
     @property
     def position(self):
