@@ -18,6 +18,5 @@ def datafromcsv(Stock, start_date=np.datetime64(date(2000, 1, 1)), end_date=np.d
     return data
 
 def run(strategy=AligatorIndicator, strategy_str="AligatorIndicator"):
-    bt = Backtest(datafromcsv("AAPL"), strategy, commission=.002,
-                exclusive_orders=True)
+    bt = Backtest(datafromcsv("AAPL"), strategy, commission=.002)
     stats = bt.run()
