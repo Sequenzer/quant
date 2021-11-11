@@ -32,8 +32,8 @@ router.post("/", (req, res) => {
 //@access 	Public
 
 router.get("/OHLC", (req, res) => {
-  if (req.body.stock) {
-    OHLC.find({ stock: req.body.stock })
+  if (req.query.stock) {
+    OHLC.find({ stock: req.query.stock })
       .sort({ date: -1 })
       .then((OHLC) => {
         if (OHLC.length === 0) {

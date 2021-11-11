@@ -15,18 +15,26 @@ function Stockprice(props) {
     var sol = [];
     axios
       .get(url_ohlc, {
-        data: { stock: stock },
+        params: {
+          stock: stock,
+        },
       })
       .then((res) => {
         res.data.forEach((element) => {
           sol.push({
             date: new Date(element.date),
             close: element.close,
+            open: element.open,
+            high: element.high,
+            low: element.low,
           });
         });
       })
       .then(() => {
-        drawChart(sol);
+        console.log(sol[0]);
+        //Cut Data
+        var cut = sol.slice(0, 50);
+        drawChart(cut);
       })
       .then(() => {
         console.log("Done drawing chart");
@@ -67,30 +75,40 @@ function Stockprice(props) {
       .append("g")
       .attr("transform", "translate(" + pad.left + ",0)")
       .call(d3.axisLeft(yScale));
-    // Add the line
-    var line = svg.append("g").attr("clip-path", "url(#clip)");
+    // Add the data
+    var plt = svg.append("g").attr("clip-path", "url(#clip)");
 
-    var series = line.append("g").classed("series", true);
-    series
-      .append("path")
-      .datum(data)
-      .attr("class", "line") // I add the class line to be able to modify this line later on.
-      .attr("fill", "none")
-      .attr("stroke", "black")
-      .attr("stroke-width", 1.5)
-      .attr(
-        "d",
-        d3
-          .line()
-          .x((d) => {
-            //console.log(xScale(d.close));
-            return xScale(d.date);
-          })
-          .y((d) => {
-            //console.log(yScale(d.close));
-            return yScale(d.close);
-          })
-      );
+    function drawCandle(parent, data, width) {
+      var boxHeight = yScale(data.close) - yScale(data.open);
+
+      var candles = parent
+        .append("g")
+        .classed("ohlc", true)
+        .selectAll("box")
+        .data(data)
+        .enter()
+        .append("g");
+
+      candles
+        .append("rect")
+        .attr("x", (d) => xScale(d.date.setHours(0, 0, 0, 0)) - width / 2)
+        .attr("y", (d) => yScale(Math.max(d.open, d.close)))
+        .attr("width", width)
+        .attr("height", (d) => Math.abs(yScale(d.open) - yScale(d.close)))
+        .attr("fill", (d) => (d.open > d.close ? "red" : "green"))
+        .append("text")
+        .text((d) => d.open + " - " + d.close);
+
+      candles
+        .append("line")
+        .attr("x1", (d) => xScale(d.date))
+        .attr("y1", (d) => yScale(d.low))
+        .attr("x2", (d) => xScale(d.date))
+        .attr("y2", (d) => yScale(d.high))
+        .attr("stroke", "black");
+    }
+
+    drawCandle(plt, data, (widthValue - pad.left) / data.length);
 
     // Add brushing
     var brush = d3
@@ -102,7 +120,7 @@ function Stockprice(props) {
       .on("end", updateChart); // Each time the brush selection changes, trigger the 'updateChart' function
 
     //append brushing
-    line.append("g").attr("class", "brush").call(brush);
+    plt.append("g").attr("class", "brush").call(brush);
 
     function updateChart(event) {
       var extent = event.selection;
@@ -111,42 +129,76 @@ function Stockprice(props) {
         if (!idleTimeout) return (idleTimeout = setTimeout(idled, 350)); // This allows to wait a little bit
         xScale.domain([4, 8]);
       } else {
-        xScale.domain([xScale.invert(extent[0]), xScale.invert(extent[1])]);
-        line.select(".brush").call(brush.move, null); // This remove the grey brush area as soon as the selection has been done
+        var mindate = xScale.invert(extent[0]);
+        var maxdate = xScale.invert(extent[1]);
+        xScale.domain([
+          mindate.setHours(0, 0, 0, 0),
+          maxdate.setHours(0, 0, 0, 0),
+        ]);
+        yScale.domain([
+          d3.min(data, (d) => {
+            if (d.date > mindate && d.date < maxdate) {
+              return Math.min(d.low, d.open, d.close);
+            }
+          }),
+          d3.max(data, (d) => {
+            if (d.date > mindate && d.date < maxdate) {
+              return Math.max(d.high, d.open, d.close);
+            }
+          }),
+        ]);
+        plt.select(".brush").call(brush.move, null); // This remove the grey brush area as soon as the selection has been done
       }
       // Update axis and line position
       xAxis.transition().duration(1000).call(d3.axisBottom(xScale));
-      line
-        .select(".line")
-        .transition()
-        .duration(1000)
-        .attr(
-          "d",
-          d3
-            .line()
-            .x((d) => {
-              //console.log(d.date);
-              return xScale(d.date);
-            })
-            .y((d) => {
-              //console.log(d.close);
-              return yScale(d.close);
-            })
-        );
+      yAxis.transition().duration(1000).call(d3.axisLeft(yScale));
+
+      //Remove Object outside of scale
+
+      var candlestoRemove = plt.select(".ohlc").selectAll("g");
+
+      candlestoRemove
+        .filter((d) => {
+          return xScale(d.date) < 0 || xScale(d.date) > widthValue;
+        })
+        .remove();
+
+      updateCandles(plt);
+
+      function updateCandles(plt) {
+        // Update the the candle positions
+        var candle = plt.select(".ohlc").selectAll("g");
+        //get selection length
+        var blockwidth = (widthValue - pad.left) / xScale.ticks().length;
+        console.log(blockwidth, candle.size(), xScale.ticks().length);
+
+        candle
+          .select("rect")
+          .transition()
+          .duration(1000)
+          .attr("x", (d) => xScale(d.date) - blockwidth / 2)
+          .attr("y", (d) => yScale(Math.max(d.open, d.close)))
+          .attr("height", (d) => Math.abs(yScale(d.open) - yScale(d.close)))
+          .attr("width", blockwidth);
+
+        candle
+          .select("line")
+          .transition()
+          .duration(1000)
+          .attr("x1", (d) => xScale(d.date))
+          .attr("x2", (d) => xScale(d.date))
+          .attr("y1", (d) => yScale(d.low))
+          .attr("y2", (d) => yScale(d.high));
+      }
+
       //on dbClick action
       svg.on("dblclick", function () {
+        //First Redraw then reScale
+
         xScale.domain(d3.extent(data, (d) => d.date));
+        yScale.domain(d3.extent(data), (d) => d.close);
         xAxis.transition().call(d3.axisBottom(xScale));
-        line
-          .select(".line")
-          .transition()
-          .attr(
-            "d",
-            d3
-              .line()
-              .x((d) => xScale(d.date))
-              .y((d) => yScale(d.close))
-          );
+        yAxis.transition().call(d3.axisLeft(yScale));
       });
     }
     // gridlines in y axis function
@@ -170,7 +222,7 @@ function Stockprice(props) {
 
   const onMount = () => {
     //get Data from APi
-    var data = getData("AAPL");
+    var data = getData("GOOG");
 
     //d3.select("#data_svg_root").style("grid-row", "2");
 

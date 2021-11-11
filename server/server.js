@@ -2,8 +2,35 @@ const express = require("express");
 const { spawn } = require("child_process");
 const mongoose = require("mongoose");
 const { csvToDb } = require("./utils/util");
+var fs = require("fs");
 
-//csvToDb("AAPL");
+const OHLC = require("./models/OHLC");
+
+arr = fs.readdirSync("./ressources/testData", (folder) => {
+  return folder;
+});
+
+// For adding fiels to Db
+// arr.forEach((file) => {
+//   var name = file.slice(0, -4);
+//   var count = 0;
+//   OHLC.find({ stock: name }).exec(function (err, results) {
+//     var count = results.length;
+//     if (count == 0) {
+//       //csvToDb(name);
+//     } else {
+//       console.log(count, name);
+//     }
+//   });
+//   if (name !== "AAPL" && name !== "AXP") {
+//     //For deleting
+//     //OHLC.deleteMany({ stock: name }, (err, res) => console.log(err, res));
+//     //csvToDb(name);
+//     console.log("Finished", name);
+//   }
+// });
+
+//csvToDb("BA");
 
 //Import .env variables
 require("dotenv").config();

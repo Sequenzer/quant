@@ -40,7 +40,7 @@ const StyledLandingPage = styled(LandingPage)`
     text-align: center;
   }
   .otp1 {
-    grid-column: 2 / 3;
+    grid-column: 2 / 5;
   }
   .otp2 {
     grid-column: 4 / 5;
@@ -58,10 +58,10 @@ function LandingPage(props) {
         <h2 className="output-header">Output #1</h2>
         <Stockprice />
       </Paper>
-      <Paper className="output-paper otp2">
+      {/* <Paper className="output-paper otp2">
         <h2 className="output-header">Output #2</h2>
         <Trades />
-      </Paper>
+      </Paper> */}
       <Paper className="output-paper inf1">
         <h2 className="output-header">Infobox</h2>
         Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy

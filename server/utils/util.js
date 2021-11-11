@@ -25,6 +25,7 @@ function csvToDb(stock) {
     return solution;
   };
   const objToDB = (obj) => {
+    var objArr = [];
     obj.map((ele) => {
       if (ele.date !== undefined && ele.date !== "" && ele.date !== null) {
         const newOHLC = new OHLC({
@@ -37,12 +38,15 @@ function csvToDb(stock) {
           volume: ele.volume,
           adjclose: ele.adjclose,
         });
-        newOHLC
-          .save()
-          .then(() => console.log("Saved Datapoint"))
-          .catch((err) => console.log(err, ele));
+        objArr.push(newOHLC);
+
+        // newOHLC
+        //   .save()
+        //   .then(() => console.log("Saved Datapoint"))
+        //   .catch((err) => console.log(err, ele));
       }
     });
+    OHLC.insertMany(objArr).then(console.log("Added new batch"));
   };
   fs.readFile(pathToCsv, "utf8", (err, data) => {
     if (err) {

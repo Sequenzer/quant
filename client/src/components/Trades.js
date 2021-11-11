@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import * as d3 from "d3";
 import axios from "axios";
+import Stockprice from "./Stockprice";
 
 const heightValue = 400;
 const widthValue = 800;
@@ -15,7 +16,9 @@ function Trades(props) {
     var sol = [];
     axios
       .get(url_ohlc, {
-        data: { stock: stock },
+        params: {
+          stock: stock,
+        },
       })
       .then((res) => {
         res.data.forEach((element) => {
@@ -170,7 +173,7 @@ function Trades(props) {
 
   const onMount = () => {
     //get Data from APi
-    var data = getData("AAPL");
+    var data = getData("GOOG");
 
     //d3.select("#data_svg_root").style("grid-row", "2");
 
