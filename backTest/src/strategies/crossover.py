@@ -21,13 +21,13 @@ def crossover(series1, series2):
 class SmaCross(Strategy):
     def init(self):
         price = self.data.Close
-        self.ma1 = self.I(SMA, price, 10)
-        self.ma2 = self.I(SMA, price, 20)
+        self.add_indicator_fkt('ma1', SMA, price, 10)
+        self.add_indicator_fkt('ma2', SMA, price, 20)
 
     def next(self):
-        if crossover(self.ma1, self.ma2):
-            self.position.close()
+        if crossover(self.get_indicator_dataset('ma1'), self.get_indicator_dataset('ma2')):
+            self.close_position()
             self.buy()
-        elif crossover(self.ma2, self.ma1):
-            self.position.close()
+        elif crossover(self.get_indicator_dataset('ma2'), self.get_indicator_dataset('ma1')):
+            self.close_position()
             self.sell()
