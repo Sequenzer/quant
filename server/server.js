@@ -6,10 +6,6 @@ var fs = require("fs");
 
 const OHLC = require("./models/OHLC");
 
-arr = fs.readdirSync("./ressources/testData", (folder) => {
-  return folder;
-});
-
 // For adding fiels to Db
 // arr.forEach((file) => {
 //   var name = file.slice(0, -4);

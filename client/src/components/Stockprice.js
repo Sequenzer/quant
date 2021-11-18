@@ -108,7 +108,7 @@ function Stockprice(props) {
         .attr("stroke", "black");
     }
 
-    drawCandle(plt, data, (widthValue - pad.left) / data.length);
+    drawCandle(plt, data, xScale(data[0].date) - xScale(data[1].date));
 
     // Add brushing
     var brush = d3
@@ -127,7 +127,7 @@ function Stockprice(props) {
       //if no selection is made back to init coords
       if (!extent) {
         if (!idleTimeout) return (idleTimeout = setTimeout(idled, 350)); // This allows to wait a little bit
-        xScale.domain([4, 8]);
+        xScale.domain([4, 8]); // Why?
       } else {
         var mindate = xScale.invert(extent[0]);
         var maxdate = xScale.invert(extent[1]);
@@ -147,6 +147,13 @@ function Stockprice(props) {
             }
           }),
         ]);
+        //If YScale domain contaisn Nan then set both to default
+        if (isNaN(yScale.domain()[0])) {
+          yScale.domain([
+            d3.min(data, (d) => Math.min(d.low, d.open, d.close)),
+            d3.max(data, (d) => Math.max(d.high, d.open, d.close)),
+          ]);
+        }
         plt.select(".brush").call(brush.move, null); // This remove the grey brush area as soon as the selection has been done
       }
       // Update axis and line position
@@ -168,8 +175,13 @@ function Stockprice(props) {
       function updateCandles(plt) {
         // Update the the candle positions
         var candle = plt.select(".ohlc").selectAll("g");
+        console.log(
+          xScale(data[0].date) - xScale(data[1].date),
+          data[0].date,
+          data[1].date
+        );
         //get selection length
-        var blockwidth = (widthValue - pad.left) / xScale.ticks().length;
+        var blockwidth = xScale(data[0].date) - xScale(data[1].date);
         console.log(blockwidth, candle.size(), xScale.ticks().length);
 
         candle
@@ -195,10 +207,43 @@ function Stockprice(props) {
       svg.on("dblclick", function () {
         //First Redraw then reScale
 
+        plt.select(".ohlc").selectAll("g").remove();
+
+        // Draw new Candle
+        var candle = plt
+          .select(".ohlc")
+          .selectAll("box")
+          .data(data)
+          .enter()
+          .append("g");
+
+        candle
+          .append("rect")
+          .attr(
+            "x",
+            (d) =>
+              xScale(d.date.setHours(0, 0, 0, 0)) -
+              (xScale(data[0].date) - xScale(data[1].date)) / 2
+          )
+          .attr("y", (d) => yScale(Math.max(d.open, d.close)))
+          .attr("width", xScale(data[0].date) - xScale(data[1].date))
+          .attr("height", (d) => Math.abs(yScale(d.open) - yScale(d.close)))
+          .attr("fill", (d) => (d.open > d.close ? "red" : "green"));
+
+        candle
+          .append("line")
+          .attr("x1", (d) => xScale(d.date))
+          .attr("y1", (d) => yScale(d.low))
+          .attr("x2", (d) => xScale(d.date))
+          .attr("y2", (d) => yScale(d.high))
+          .attr("stroke", "black");
+
         xScale.domain(d3.extent(data, (d) => d.date));
         yScale.domain(d3.extent(data), (d) => d.close);
         xAxis.transition().call(d3.axisBottom(xScale));
         yAxis.transition().call(d3.axisLeft(yScale));
+
+        updateCandles(plt);
       });
     }
     // gridlines in y axis function
