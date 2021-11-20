@@ -1,3 +1,5 @@
 from src.run_module import run
 
-run()
+save = run()
+
+print(save['trades'][-1].size)
