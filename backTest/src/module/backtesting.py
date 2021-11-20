@@ -62,6 +62,7 @@ class Order:
         self._types = ['sell', 'buy', 'short', 'removeShort']
         assert _type in self._types, 'Order must be string of type' + str(self._types)
         self._type = _type
+        self.cancelled = False
 
     @property
     def get_size(self):
@@ -82,7 +83,14 @@ class Order:
             return 0
 
     @property
+    def close(self):
+        self._broker.closed_orders.append(self)
+        self._broker.orders.remove(self)
+
+    @property
     def cancel(self):
+        self.cancelled = True
+        self._broker.closed_orders.append(self)
         self._broker.orders.remove(self)
 
     @property
@@ -169,6 +177,7 @@ class Trade:
 class Broker:
     def __init__(self, *, data, cash, time='Open'):
         self.orders = []
+        self.closed_orders = []
         self.trades = []
         self.closed_trades = []
         self._data = data
@@ -224,7 +233,7 @@ class Broker:
         for order in self.orders:
             if order.legal:
                 self.open_trade(order.get_size, self.stock_price(order.stock_id), order._type)
-        self.orders = []
+                order.close
 
     def open_trade(self, size, current_price, trade_type):
         trade = Trade(self, size, current_price, trade_type, opening_date = self._data.iloc[-1].name)
@@ -307,6 +316,10 @@ class Backtest:
 
         finally:
             print('Backtest Complete.')
+            return {
+                'orders': self.broker.closed_orders,
+                'trades': self.broker.closed_trades
+            }
 
     def plot(self):
         pass

@@ -17,6 +17,7 @@ def datafromcsv(Stock, start_date=np.datetime64(date(2000, 1, 1)), end_date=np.d
     data = data.iloc[ lambda x: x.index < end_date]
     return data
 
-def run(strategy=AligatorIndicator, strategy_str="AligatorIndicator"):
-    bt = Backtest(datafromcsv("AAPL"), strategy, commission=.002)
+def run(strategy=AligatorIndicator, stock='AAPL', commision=.002):
+    bt = Backtest(datafromcsv(stock), strategy, commission=commision)
     stats = bt.run()
+    return stats
