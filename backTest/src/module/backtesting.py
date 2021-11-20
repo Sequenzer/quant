@@ -18,6 +18,42 @@ class Stock:
     def __repr__(self):
         return f'Sock({self.id}, {self.stock_id}, {self._type})'
 
+class Position:
+    def __init__(self, _broker, stock_id,volume,derivative_type):
+        self.stock_id = stock_id
+        self._broker = _broker
+        self.volume = volume
+        self.position_type = derivative_type
+    
+    def update(self,position_to_add):
+        self.volume += position_to_add.volume
+
+
+class Portfolio:
+    def __init__(self,broker, market):
+        self._broker = broker
+        self._market = market
+        self._positions = {}
+
+    def update(self,position):
+        if position.stock_id in self._positions:
+            self._positions[position.stock_id][position.derivative_type].update(position)
+        else:
+            self._positions[position.stock_id][position.derivative_type] = position
+    def update_portfolio_value(self):
+        for stock_id in self._positions:
+            for position_type in self._positions[stock_id]:
+                self._positions[stock_id][position_type].update_position_value()
+    def isPleite(self):
+        for stock_id in self._positions:
+            for position_type in self._positions[stock_id]:
+                ## Please Continue David!!!!
+
+
+
+                
+
+
 
 class Position:
     def __init__(self, broker):
