@@ -27,16 +27,19 @@ def aligator_indicator(green, red, blue):
 class AligatorIndicator(Strategy):
     def init(self):
         price = self.data.Close
-        self.green = self.I(moving_average, price, 5, 3)
-        self.red = self.I(moving_average, price, 8, 5)
-        self.blue = self.I(moving_average, price, 13, 8)
+        self.add_indicator_fkt('green', moving_average, price, 5, 3)
+        self.add_indicator_fkt('red', moving_average, price, 8, 5)
+        self.add_indicator_fkt('blue', moving_average, price, 13, 8)
 
     def next(self):
-        indicator = aligator_indicator(self.green, self.red, self.blue)
+        indicator = aligator_indicator(
+            self.get_indicator_dataset('green'), 
+            self.get_indicator_dataset('red'), 
+            self.get_indicator_dataset('blue'))
         if indicator != None:
             if indicator:
-                self.position.close()
+                self.close_position()
                 self.buy()
             else:
-                self.position.close()
+                self.close_position()
                 self.sell()

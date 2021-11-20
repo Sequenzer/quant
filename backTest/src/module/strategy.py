@@ -3,14 +3,15 @@ from abc import abstractmethod, ABCMeta
 class Strategy(metaclass=ABCMeta):
     def __init__(self, broker, data=None, cash=None):
         self.data = data
-        self.indicators = []
+        self.indicators = {}
         self._broker = broker
         self.order = None
 
-    def I(self, indicator_function, data, *args, **kwargs):
-        indicator = indicator_function(data, *args, **kwargs)
-        self.indicators.append(indicator)
-        return indicator
+    def add_indicator_fkt(self, name, indicator_function, data, *args, **kwargs):
+        self.indicators[name] = indicator_function(data, *args, **kwargs)
+
+    def get_indicator_dataset(self, name):
+        return self.indicators[name]
 
     @abstractmethod
     def init(self):
@@ -38,6 +39,9 @@ class Strategy(metaclass=ABCMeta):
 
     # def remove_short(self, id=None, cash=None, size=None):
     #     return self._broker.new_order(self._broker.cash, "removeShort")
+
+    def close_position(self):
+        self.position.close()
 
     @property
     def position(self):
