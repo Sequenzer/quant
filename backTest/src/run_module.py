@@ -4,8 +4,8 @@ from datetime import date
 
 
 
-from .strategies.aligartor_indicator import AligatorIndicator
-from .module import Backtest
+from strategies.aligartor_indicator import AligatorIndicator
+from module import Backtest
 
 #Collect Data from CSV base on its Stock name
 def datafromcsv(Stock, start_date=np.datetime64(date(2000, 1, 1)), end_date=np.datetime64(date(2020, 1, 1))):

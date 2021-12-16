@@ -10,7 +10,7 @@ const OHLC = require("../../models/OHLC");
 //@access 	Public
 
 const pathToBacktest = "../backTest/main.py";
-const pathToTemp = "../backTest/src/utils";
+const pathToTemp = "../backTest/src";
 
 router.get("/", (req, res) => {
   var answer = "";
@@ -36,7 +36,7 @@ router.get("/", (req, res) => {
           // pythonOptions: ["-u"], // get print results in real-time
           scriptPath: pathToTemp,
         };
-        let pyshell = new PythonShell("toJSON.py", options);
+        let pyshell = new PythonShell("node_access.py", options);
         pyshell.send(OHLC);
 
         pyshell.on("message", function (message) {

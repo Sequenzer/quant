@@ -147,7 +147,7 @@ function Stockprice(props) {
             }
           }),
         ]);
-        //If YScale domain contaisn Nan then set both to default
+        //If YScale domain contains Nan then set both to default
         if (isNaN(yScale.domain()[0])) {
           yScale.domain([
             d3.min(data, (d) => Math.min(d.low, d.open, d.close)),
@@ -170,19 +170,13 @@ function Stockprice(props) {
         })
         .remove();
 
-      updateCandles(plt);
+      updateCandles();
 
-      function updateCandles(plt) {
-        // Update the the candle positions
+      function updateCandles() {
+        // Update the candle positions
         var candle = plt.select(".ohlc").selectAll("g");
-        console.log(
-          xScale(data[0].date) - xScale(data[1].date),
-          data[0].date,
-          data[1].date
-        );
         //get selection length
         var blockwidth = xScale(data[0].date) - xScale(data[1].date);
-        console.log(blockwidth, candle.size(), xScale.ticks().length);
 
         candle
           .select("rect")
@@ -239,11 +233,11 @@ function Stockprice(props) {
           .attr("stroke", "black");
 
         xScale.domain(d3.extent(data, (d) => d.date));
-        yScale.domain(d3.extent(data), (d) => d.close);
+        yScale.domain(d3.extent(data, (d) => d.close));
         xAxis.transition().call(d3.axisBottom(xScale));
         yAxis.transition().call(d3.axisLeft(yScale));
 
-        updateCandles(plt);
+        updateCandles();
       });
     }
     // gridlines in y axis function
