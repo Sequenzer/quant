@@ -9,8 +9,7 @@ const OHLC = require("../../models/OHLC");
 //@desc 	Get a dummy Backtest
 //@access 	Public
 
-const pathToBacktest = "../backTest/main.py";
-const pathToTemp = "../backTest/src";
+const pathToPy = "./utils/";
 
 router.get("/", (req, res) => {
   var answer = "";
@@ -32,12 +31,19 @@ router.get("/", (req, res) => {
       } else {
         let options = {
           mode: "json",
-          pythonPath: "../backTest/venv/Scripts/python",
+          pythonPath: pathToPy + "server_venv/Scripts/python",
           // pythonOptions: ["-u"], // get print results in real-time
-          scriptPath: pathToTemp,
+          scriptPath: pathToPy,
         };
         let pyshell = new PythonShell("node_access.py", options);
         pyshell.send(OHLC);
+
+        pyshell.on("stderr", function (stderr) {
+          console.log("--Python Error Message: ", stderr);
+          pyshell.kill();
+          answer = "Error in Python Script, view console for more info";
+          res.status(500);
+        });
 
         pyshell.on("message", function (message) {
           // received a message sent from the Python script (a simple "print" statement)
@@ -46,12 +52,15 @@ router.get("/", (req, res) => {
         });
 
         pyshell.end(function (err, code, signal) {
-          if (err) throw err;
+          if (err) {
+            console.log("Error: " + err);
+            throw err;
+          }
           console.log("The exit code was: " + code);
           console.log("The exit signal was: " + signal);
 
           res.send(answer);
-          console.log("finished");
+          console.log("finished executing");
         });
       }
     })

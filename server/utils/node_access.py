@@ -1,8 +1,17 @@
 import sys, json
 import pandas as pd
 
+import sys
+sys.path.append('..')
 
-from src.run_module import run
+# from run_module import run
+
+from pathlib import Path
+# print('{ "File Path": "%s"}' % (Path().absolute()))
+
+from strategies.aligartor_indicator import AligatorIndicator
+from module import Backtest
+print("Directory Path:", Path().absolute())
 
 
 #Read data from stdin
@@ -28,8 +37,8 @@ def list_to_df(data_list):
 def main():
 
     
-    #input = read_input()
-    #data = list_to_df(input)
+    input = read_input()
+    # data = list_to_df(input)
     # bt_trades= run(data=data)
     
     #print(json.dumps((df.head().to_json())))
@@ -61,7 +70,9 @@ def main():
         "data": input
     }
 
-    #print(json.dumps(data.head().to_json()))
+    print(json.dumps(bt))
+
+    # print(json.dumps(data.head().to_json()))
 
     #write into a test.txt file
     # with open('df.txt', 'w') as outfile:
