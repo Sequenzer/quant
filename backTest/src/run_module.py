@@ -1,15 +1,20 @@
 import pandas as pd
 import numpy as np
 from datetime import date
+import os 
+
+import pathlib
+parentpath = str(pathlib.Path(__file__).parent.resolve()) + "/"
 
 
 
-from strategies.aligartor_indicator import AligatorIndicator
-from module import Backtest
+
+from .strategies.aligartor_indicator import AligatorIndicator
+from .module import Backtest
 
 #Collect Data from CSV base on its Stock name
 def datafromcsv(Stock, start_date=np.datetime64(date(2000, 1, 1)), end_date=np.datetime64(date(2020, 1, 1))):
-    data = pd.read_csv("utils/"+ Stock + ".csv")
+    data = pd.read_csv(parentpath + "utils/"+ Stock + ".csv")
     columns = ['Date', 'Volume', 'Open', 'High', 'Low', 'Close', 'adjclose']
     data.columns = columns
     data = data.set_index("Date")

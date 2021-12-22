@@ -173,7 +173,7 @@ class Backtest:
         self.strategy.next()
 
     def run(self):
-        print('Running Backtest.')
+        print(" 'Output': 'Running Backtest.'")
         try:
             for i in range(1, len(self.data.index)):
                 data = self.data.iloc[:i]
@@ -182,15 +182,15 @@ class Backtest:
 
                 self.process_day
         
-            print('Saving Data.')
+            print(" 'Output': 'Saving Data.'")
             self.trades_to_csv()
         
         except Exception as e:
-            print('Error Detected.')
+            print(" 'Output': 'Error Detected.'")
             raise e
 
         finally:
-            print('Backtest Complete.')
+            print(" 'Output': 'Backtest Complete.'")
 
     def plot(self):
         pass

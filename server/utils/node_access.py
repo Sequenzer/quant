@@ -1,17 +1,20 @@
 import sys, json
 import pandas as pd
-
-import sys
-sys.path.append('..')
+import sys,os
+sys.path.append(os.path.realpath('..'))
 
 # from run_module import run
 
 from pathlib import Path
-# print('{ "File Path": "%s"}' % (Path().absolute()))
 
-from strategies.aligartor_indicator import AligatorIndicator
-from module import Backtest
-print("Directory Path:", Path().absolute())
+
+
+
+
+from backTest.src.strategies.aligartor_indicator import AligatorIndicator
+from backTest.src.run_module import run
+
+# print("Directory Path:", Path().absolute())
 
 
 #Read data from stdin
@@ -37,11 +40,11 @@ def list_to_df(data_list):
 def main():
 
     
-    input = read_input()
-    # data = list_to_df(input)
+    input =  sys.stdin.readlines()
+    data = list_to_df(input)
     # bt_trades= run(data=data)
     
-    #print(json.dumps((df.head().to_json())))
+    print(json.dumps((data.head().to_json())))
 
 
     #bt_trades= run(data=)
@@ -70,7 +73,7 @@ def main():
         "data": input
     }
 
-    print(json.dumps(bt))
+    # print(json.dumps(bt))
 
     # print(json.dumps(data.head().to_json()))
 
